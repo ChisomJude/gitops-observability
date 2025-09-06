@@ -27,8 +27,10 @@ spec:
 
         singleBinary:
           replicas: 1
-          persistence:
-            enabled: false
+           persistence:
+            enabled: true
+            size: 1Gi
+            
 
         # Make sure scalable components are OFF
         read:
