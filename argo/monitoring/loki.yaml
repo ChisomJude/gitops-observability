@@ -11,28 +11,41 @@ spec:
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: loki
-    # keep or update the version you want
     targetRevision: 6.6.3
     helm:
       values: |
+        # Run the lightweight single-binary variant
         deploymentMode: SingleBinary
 
         loki:
           auth_enabled: false
-          commonConfig:
-            replication_factor: 1
           storage:
             type: filesystem
+          # Quick start schema (no persistence). Replace with schemaConfig later.
           useTestSchema: true
+          # Make root FS writable inside the container
+          containerSecurityContext:
+            readOnlyRootFilesystem: false
+          # Ruler needs a writable dir
+          ruler:
+            storage:
+              type: local
+              local:
+                directory: /var/loki/rules
 
         singleBinary:
           replicas: 1
-           persistence:
-            enabled: true
-            size: 1Gi
-            
+          persistence:
+            enabled: false
+          # Give Loki a writable /var/loki via emptyDir
+          extraVolumes:
+            - name: loki-data
+              emptyDir: {}
+          extraVolumeMounts:
+            - name: loki-data
+              mountPath: /var/loki
 
-        # Make sure scalable components are OFF
+        # Turn OFF scalable components and chunk cache (saves resources)
         read:
           replicas: 0
         write:
@@ -40,8 +53,9 @@ spec:
         backend:
           replicas: 0
         chunksCache:
-          enabled: false 
+          enabled: false
 
+        # Enable gateway and promtail shipping logs to Loki
         gateway:
           enabled: true
 
